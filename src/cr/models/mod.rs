@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
 pub mod search;
 pub mod seasons;
-
+pub mod episodes;
+pub mod stream;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CrApiCms {
     pub cms: Cms,
@@ -23,4 +24,5 @@ pub struct CrApiAccessToken {
     pub expires_in: i64,
     pub token_type: String,
     pub country: String,
+    pub refresh_token: Option<String>,
 }
