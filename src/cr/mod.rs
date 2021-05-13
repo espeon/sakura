@@ -28,14 +28,14 @@ pub enum AccessLevel {
 pub struct CrunchyrollClient {
     pub token: CrAccessToken,
     pub cms: Option<Cms>,
-    db: sqlx::Pool<sqlx::Sqlite>,
+    db: sqlx::Pool<sqlx::Postgres>,
     pub req: Client,
 }
 
 #[allow(dead_code)]
 impl CrunchyrollClient {
     pub async fn new(
-        db: sqlx::Pool<sqlx::Sqlite>,
+        db: sqlx::Pool<sqlx::Postgres>,
         req: Client,
     ) -> anyhow::Result<Self, anyhow::Error> {
         let res: CrApiAccessToken = req
@@ -64,7 +64,7 @@ impl CrunchyrollClient {
         Ok(client)
     }
     pub async fn new_with_credentials(
-        db: sqlx::Pool<sqlx::Sqlite>,
+        db: sqlx::Pool<sqlx::Postgres>,
         req: Client,
         username: String,
         password: String,
@@ -188,10 +188,16 @@ impl CrunchyrollClient {
     pub async fn check_cms(&mut self) -> anyhow::Result<Cms, anyhow::Error> {
         let cms_info = match &self.cms {
             Some(cms) => {
+                println!("Cms info found");
+                
                 let now = chrono::Utc::now();
-                if now > cms.expires.parse::<DateTime<Utc>>()? {
+                if now < cms.expires.parse::<DateTime<Utc>>()? {
+                    println!("{:?}", &cms);
+                    println!("not expired");
                     cms.to_owned()
                 } else {
+                    println!("expired!");
+                    println!("it is currently {} and token expires at {}", now, cms.expires);
                     let cms_info = self.get_cms().await?;
                     cms_info
                 }
@@ -205,6 +211,7 @@ impl CrunchyrollClient {
         Ok(cms_info)
     }
     async fn get_cms(&self) -> anyhow::Result<Cms, anyhow::Error> {
+        println!("Getting CMS Info");
         let res: CrApiCms = self
             .req
             .get("https://beta-api.crunchyroll.com/index/v2")
@@ -214,6 +221,7 @@ impl CrunchyrollClient {
             .json()
             .await?;
 
+        println!("{:?}",&res.cms);
         Ok(res.cms)
     }
     pub async fn access_level(&self) -> AccessLevel {
