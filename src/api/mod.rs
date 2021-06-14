@@ -184,9 +184,23 @@ pub async fn show_experience<'r>(
             } else {
                 // otherwise (assuming crunchyroll) we generate the video URL
                 let mut cr = cr_rw.write().await;
+                let episode = match query!(
+                    r#"
+                    select id, season_id, cr_id from episode
+                    where id = $1"#,
+                    hid[0] as i32
+                )
+                .fetch_one(&mut pool.acquire().await.unwrap())
+                .await {
+                    Ok(e) => e,
+                    Err(_) => todo!(),
+                };
                 let season = match query!(
                     r#"
-                    select id, cr_id from season"#
+                    select id, cr_id from season
+                    where id = $1
+                    "#,
+                    episode.season_id
                 )
                 .fetch_one(&mut pool.acquire().await.unwrap())
                 .await
