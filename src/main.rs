@@ -56,10 +56,15 @@ async fn go(
             "/api",
             rocket::routes![
                 api::index,
-                api::test,
-                api::get_series_test,
-                api::get_episodes_test,
+                api::get_series,
+                api::get_episodes,
                 api::show_experience
+            ],
+        )
+        .mount(
+            "/api/cr",
+            rocket::routes![
+                api::cr::index_series
             ],
         )
         .launch()

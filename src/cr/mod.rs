@@ -5,7 +5,8 @@ use std::ops::Add;
 use crate::cr::models::episodes::CrEpisodesResult;
 
 use self::models::{
-    episodes::EpisodeItem, search::CrSearchResult, seasons::CrSeriesResult, stream::CrStreamResult,
+    episodes::EpisodeItem, search::CrSearchResult, seasons::CrSeasonsResult,
+    series::CrSeriesResult, stream::CrStreamResult, 
     Cms, CrApiAccessToken, CrApiCms,
 };
 
@@ -91,7 +92,8 @@ impl CrunchyrollClient {
         let expiry = chrono::Utc::now().add(token_length);
 
         let client = CrunchyrollClient {
-            token: CrAccessToken { // insert token info (refresh token included if premium)
+            token: CrAccessToken {
+                // insert token info (refresh token included if premium)
                 access_token: res.access_token,
                 expiry,
                 refresh_token: res.refresh_token,
@@ -115,19 +117,48 @@ impl CrunchyrollClient {
 
         Ok(res)
     }
-    pub async fn seasons(
+    pub async fn series(
         &mut self,
         series_id: String,
     ) -> anyhow::Result<CrSeriesResult, anyhow::Error> {
+        println!("series");
         let info = self.clone();
         let cms = self.check_cms().await?;
         let res: CrSeriesResult = info
             .req
             .get(format!(
+                "https://beta-api.crunchyroll.com/cms/v2{}/series/{}",
+                cms.bucket, series_id
+            ))
+            .query(&[
+                // i haaaaaaaaaaaaate crunchyroll's new api because of this
+                ("Signature", cms.signature.clone()),
+                ("Policy", cms.policy.clone()),
+                ("Key-Pair-Id", cms.key_pair_id.clone()),
+            ])
+            .bearer_auth(info.token.access_token)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        Ok(res)
+    }
+    pub async fn seasons(
+        &mut self,
+        series_id: String,
+    ) -> anyhow::Result<CrSeasonsResult, anyhow::Error> {
+        println!("season");
+        let info = self.clone();
+        let cms = self.check_cms().await?;
+        let res: CrSeasonsResult = info
+            .req
+            .get(format!(
                 "https://beta-api.crunchyroll.com/cms/v2{}/seasons",
                 cms.bucket
             ))
-            .query(&[ // i haaaaaaaaaaaaate crunchyroll's new api because of this
+            .query(&[
+                // i haaaaaaaaaaaaate crunchyroll's new api because of this
                 ("series_id", series_id),
                 ("Signature", cms.signature.clone()),
                 ("Policy", cms.policy.clone()),
@@ -145,6 +176,7 @@ impl CrunchyrollClient {
         &mut self,
         season_id: String,
     ) -> anyhow::Result<CrEpisodesResult, anyhow::Error> {
+        println!("episode");
         let info = self.clone();
         let cms = self.check_cms().await?;
         let res: CrEpisodesResult = info
@@ -189,7 +221,7 @@ impl CrunchyrollClient {
         let cms_info = match &self.cms {
             Some(cms) => {
                 println!("Cms info found");
-                
+
                 let now = chrono::Utc::now();
                 if now < cms.expires.parse::<DateTime<Utc>>()? {
                     println!("{:?}", &cms);
@@ -197,7 +229,10 @@ impl CrunchyrollClient {
                     cms.to_owned()
                 } else {
                     println!("expired!");
-                    println!("it is currently {} and token expires at {}", now, cms.expires);
+                    println!(
+                        "it is currently {} and token expires at {}",
+                        now, cms.expires
+                    );
                     let cms_info = self.get_cms().await?;
                     cms_info
                 }
@@ -221,7 +256,7 @@ impl CrunchyrollClient {
             .json()
             .await?;
 
-        println!("{:?}",&res.cms);
+        println!("{:?}", &res.cms);
         Ok(res.cms)
     }
     pub async fn access_level(&self) -> AccessLevel {

@@ -3,6 +3,7 @@ pub mod search;
 pub mod seasons;
 pub mod episodes;
 pub mod stream;
+pub mod series;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CrApiCms {
     pub cms: Cms,

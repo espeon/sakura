@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CrSeriesResult {
+pub struct CrSeasonsResult {
     #[serde(rename = "__class__")]
     pub class: String,
     #[serde(rename = "__href__")]

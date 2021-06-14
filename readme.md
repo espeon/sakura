@@ -1,6 +1,6 @@
 ## sakura α
 
-anime organizer and distributor
+anime organizer and viewer
 
 ### currently supports
 * nothing!
@@ -8,7 +8,6 @@ anime organizer and distributor
 ### will likely support
 * crunchyroll
 * local files
-  * will encode multiple qualities
 * more! (if you PR it at least :0)
 
 ### how do i set it up?

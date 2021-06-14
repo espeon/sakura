@@ -17,6 +17,8 @@ use crate::{
 };
 
 pub mod models;
+pub mod cr;
+pub mod anilist;
 
 #[rocket::get("/")]
 pub async fn index() -> &'static str {
@@ -33,139 +35,9 @@ struct TestSeasons {
     title: String,
     episodes: Vec<f32>,
 }
-#[rocket::get("/test")]
-pub async fn test<'r>(
-    pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
-    cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
-) -> Result<JsonValue, Forbidden<String>> {
-    dbg!("help");
-    let mut cr = cr_rw.write().await;
-    let sr = match cr.search("hitoribocchi".to_string()).await {
-        Ok(r) => r,
-        Err(e) => return Err(Forbidden(Some(e.to_string()))),
-    };
-
-    let mut r = TestReturn {
-        series: sr.items[0].items[0].title.clone(),
-        seasons: vec![],
-    };
-
-    let seasons = match cr.seasons(sr.items[0].items[0].id.to_owned()).await {
-        Ok(r) => r,
-        Err(e) => return Err(Forbidden(Some(e.to_string()))),
-    };
-
-    let series = match query_as!(
-        Series,
-        r#"
-        insert into series(slug, title, cr_id)
-        values($1, $2, $3)
-        returning id, slug, title, cr_id
-    "#,
-        slug::slugify(seasons.items[0].to_owned().title),
-        seasons.items[0].title,
-        seasons.items[0].series_id
-    )
-    .fetch_one(&mut pool.acquire().await.unwrap())
-    .await
-    {
-        Ok(r) => r,
-        Err(_) => {
-            match query_as!(
-                Series,
-                r#"
-            select id, slug, title, cr_id from "series"
-            where slug = $1
-        "#,
-                slug::slugify(seasons.items[0].to_owned().title),
-            )
-            .fetch_one(&mut pool.acquire().await.unwrap())
-            .await
-            {
-                Ok(i) => i,
-                Err(e) => return Err(Forbidden(Some(e.to_string()))),
-            }
-        }
-    };
-
-    for season in seasons.items {
-        r.seasons.push(TestSeasons {
-            title: season.title.clone(),
-            episodes: vec![],
-        });
-        let c_season = r.seasons.len();
-        let season_res = match query_as!(
-            Season,
-            r#"
-            insert into season(series_id, slug, title_romaji, cr_id)
-            values($1, $2, $3, $4)
-            returning id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur
-        "#,
-        series.id,
-        slug::slugify(season.title.to_owned()),
-        season.title,
-        season.id.clone()
-        )
-        .fetch_one(&mut pool.acquire().await.unwrap())
-        .await
-        {
-            Ok(r) => r,
-            Err(_) => {
-                match query_as!(
-                Season,
-                r#"
-            select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from "season"
-            where slug = $1
-        "#,
-        slug::slugify(season.title.to_owned()),
-            )
-            .fetch_one(&mut pool.acquire().await.unwrap())
-            .await
-            {
-                Ok(i) => i,
-                Err(e) => return Err(Forbidden(Some(e.to_string()))),
-            }}
-        };
-
-        let episodes = match cr.to_owned().episodes(season.id.clone()).await {
-            Ok(r) => r,
-            Err(e) => return Err(Forbidden(Some(e.to_string()))),
-        };
-
-        for e in episodes.items.iter() {
-            dbg!(e);
-            r.seasons[c_season - 1]
-                .episodes
-                .push(e.sequence_number as f32);
-            match query_as!(
-                Episode,
-                r#"
-                insert into episode(season_id, number, title, cr_id, description)
-                values($1, $2, $3, $4, $5)
-            "#,
-                season_res.id,
-                e.sequence_number as f32,
-                e.title,
-                e.id,
-                e.description
-            )
-            .fetch_all(&mut pool.acquire().await.unwrap())
-            .await
-            {
-                Ok(_r) => (),
-                Err(e) => {
-                    dbg!(e);
-                    continue;
-                }
-            };
-        }
-    }
-
-    Ok(json!(r))
-}
 
 #[rocket::get("/season/<slug>")]
-pub async fn get_series_test<'r>(
+pub async fn get_series<'r>(
     pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
     _cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
     hashid: State<'_, Harsh>,
@@ -199,46 +71,6 @@ pub async fn get_series_test<'r>(
             };
             return Ok(json!(ret))},
         Err(_) => return Err(NoContent),
-    };
-}
-
-#[rocket::get("/episodes?<season>")]
-pub async fn get_episodes_test<'r>(
-    pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
-    _cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
-    hashid: State<'_, Harsh>,
-    season: String,
-) -> Result<JsonValue, Forbidden<String>> {
-    let id = match hashid.decode(season) {
-        Ok(e) => e,
-        Err(e) => return Err(Forbidden(Some(e.to_string()))),
-    };
-
-    match query_as!(
-        Episode,
-        r#"
-        select id, season_id, number, title, cr_id, description from "episode"
-        where season_id = $1
-    "#,
-        id[0] as i32,
-    )
-    .fetch_all(&mut pool.acquire().await.unwrap())
-    .await
-    {
-        Ok(r) => {
-            let mut ret: Vec<replies::Episode> = vec![];
-            r.iter().for_each(|f| {
-                ret.push(replies::Episode {
-                    id: hashid.encode(&[f.id as u64]),
-                    season_id: hashid.encode(&[f.season_id as u64]),
-                    number: f.number,
-                    title: f.title.clone(),
-                    description: f.description.clone(),
-                })
-            });
-            return Ok(json!(ret));
-        }
-        Err(e) => return Err(Forbidden(Some(e.to_string()))),
     };
 }
 
@@ -282,6 +114,44 @@ pub async fn get_episodes<'r>(
     };
 }
 
+#[rocket::get("/search?<q>")]
+pub async fn search<'r>(
+    pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
+    _cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
+    hashid: State<'_, Harsh>,
+    q: String,
+) -> Result<JsonValue, Forbidden<String>> {
+    match query_as!(
+        Season,
+        r#"
+        select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from "season"
+        where slug = $1
+    "#,
+    q,
+    )
+    .fetch_one(&mut pool.acquire().await.unwrap())
+    .await
+    {
+        Ok(r) => {
+            let ret = replies::Season {
+                id: hashid.encode(&[r.id as u64]),
+                series_id: hashid.encode(&[r.series_id as u64]),
+                slug: r.slug,
+                title_en: r.title_en,
+                title_ja: r.title_ja,
+                title_romaji: r.title_romaji,
+                keywords: r.keywords,
+                anilist_id: r.anilist_id,
+                description: r.description,
+                synonyms: r.synonyms,
+                episode_amt: r.episode_amt,
+                episode_dur: r.episode_dur
+            };
+            return Ok(json!(ret))},
+        Err(_) => return Err(Forbidden(Some("oop".to_string()))),
+    };
+}
+
 #[rocket::get("/showexperience/<id>")]
 pub async fn show_experience<'r>(
     pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
@@ -306,8 +176,9 @@ pub async fn show_experience<'r>(
     .fetch_all(&mut pool.acquire().await.unwrap())
     .await
     {
-        // if we do just return the data
+        
         Ok(r) => {
+            // if we do just return the data
             if r.len() > 0 {
                 return Ok(json!(r));
             } else {
@@ -414,6 +285,7 @@ pub async fn show_experience<'r>(
                 return Ok(json!(media_list));
             }
         }
+        // we can't access the db!!! this is bad!!
         Err(e) => return Err(Forbidden(Some(e.to_string()))),
     };
 }
