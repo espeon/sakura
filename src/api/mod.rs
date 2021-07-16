@@ -16,9 +16,9 @@ use crate::{
     cr::CrunchyrollClient,
 };
 
-pub mod models;
-pub mod cr;
 pub mod anilist;
+pub mod cr;
+pub mod models;
 
 #[rocket::get("/")]
 pub async fn index() -> &'static str {
@@ -55,21 +55,8 @@ pub async fn get_series<'r>(
     .await
     {
         Ok(r) => {
-            let ret = replies::Season {
-                id: hashid.encode(&[r.id as u64]),
-                series_id: hashid.encode(&[r.series_id as u64]),
-                slug: r.slug,
-                title_en: r.title_en,
-                title_ja: r.title_ja,
-                title_romaji: r.title_romaji,
-                keywords: r.keywords,
-                anilist_id: r.anilist_id,
-                description: r.description,
-                synonyms: r.synonyms,
-                episode_amt: r.episode_amt,
-                episode_dur: r.episode_dur
-            };
-            return Ok(json!(ret))},
+            let cvt: replies::ReturnSeason = r.into();
+            return Ok(json!(cvt))},
         Err(_) => return Err(NoContent),
     };
 }
@@ -98,15 +85,10 @@ pub async fn get_episodes<'r>(
     .await
     {
         Ok(r) => {
-            let mut ret: Vec<replies::Episode> = vec![];
+            let mut ret: Vec<replies::ReturnEpisode> = vec![];
             r.iter().for_each(|f| {
-                ret.push(replies::Episode {
-                    id: hashid.encode(&[f.id as u64]),
-                    season_id: hashid.encode(&[f.season_id as u64]),
-                    number: f.number,
-                    title: f.title.clone(),
-                    description: f.description.clone(),
-                })
+                let cvt:replies::ReturnEpisode = f.into();
+                ret.push(cvt)
             });
             return Ok(json!(ret));
         }
@@ -125,29 +107,24 @@ pub async fn search<'r>(
         Season,
         r#"
         select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from "season"
-        where slug = $1
+        where LOWER(title_en) like '%' || $1 || '%'
+        or LOWER(title_romaji) like '%' || $1 || '%'
+        or LOWER(slug) like '%' || $1 || '%'
+        or LOWER(synonyms) like '%' || $1 || '%'
     "#,
     q,
     )
-    .fetch_one(&mut pool.acquire().await.unwrap())
+    .fetch_all(&mut pool.acquire().await.unwrap())
     .await
     {
-        Ok(r) => {
-            let ret = replies::Season {
-                id: hashid.encode(&[r.id as u64]),
-                series_id: hashid.encode(&[r.series_id as u64]),
-                slug: r.slug,
-                title_en: r.title_en,
-                title_ja: r.title_ja,
-                title_romaji: r.title_romaji,
-                keywords: r.keywords,
-                anilist_id: r.anilist_id,
-                description: r.description,
-                synonyms: r.synonyms,
-                episode_amt: r.episode_amt,
-                episode_dur: r.episode_dur
-            };
-            return Ok(json!(ret))},
+        Ok(season) => {
+            let mut return_seasons:Vec<replies::ReturnSeason> = vec![];
+            for r in season {
+                let cvt: replies::ReturnSeason = r.into();
+            return_seasons.push(cvt)
+            }
+
+            return Ok(json!(return_seasons))},
         Err(_) => return Err(Forbidden(Some("oop".to_string()))),
     };
 }
@@ -176,7 +153,6 @@ pub async fn show_experience<'r>(
     .fetch_all(&mut pool.acquire().await.unwrap())
     .await
     {
-        
         Ok(r) => {
             // if we do just return the data
             if r.len() > 0 {
@@ -191,7 +167,8 @@ pub async fn show_experience<'r>(
                     hid[0] as i32
                 )
                 .fetch_one(&mut pool.acquire().await.unwrap())
-                .await {
+                .await
+                {
                     Ok(e) => e,
                     Err(_) => todo!(),
                 };
