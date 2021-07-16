@@ -1,0 +1,809 @@
+{
+  "db": "PostgreSQL",
+  "0980ca34cb233679692a8257f966362b494cc9e50cf791b2a62757e366b0549c": {
+    "query": "\n                    select id, season_id, cr_id from episode\n                    where id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "season_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "18c065bf7cadea72d603fa9a09c07aee5c9215078e4ba87339323d4e3e2214c2": {
+    "query": "\n            insert into season(series_id, slug, title_en, title_ja, title_romaji, cr_id, anilist_id, description, synonyms, episode_amt, episode_dur)\n            values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n            returning id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "series_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "title_en",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "title_ja",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "title_romaji",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "keywords",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "anilist_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "synonyms",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 11,
+          "name": "episode_amt",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "episode_dur",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Int4",
+          "Varchar",
+          "Varchar",
+          "Int4",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "1d66d61de4447156185d01622de9ec9632e60ad8b1c47aca1bc448712d7bf755": {
+    "query": "\n            insert into episode(season_id, number, title, cr_id, description)\n            values($1, $2, $3, $4, $5)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Float8",
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "1e944bbb9e73220cd2b0765c81e6bfcca047189b7484084e20e0c9eae899f410": {
+    "query": "\n                    select id, cr_id from season\n                    where id = $1\n                    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        true
+      ]
+    }
+  },
+  "21e5e6c1aff4da1d01f9fb62616a682f71d0e1c6bc05b399d1bb8e6653d02102": {
+    "query": "\n        select id, season_id, number, title, cr_id, description from \"episode\"\n        where season_id = $1\n    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "season_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "number",
+          "type_info": "Float8"
+        },
+        {
+          "ordinal": 3,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "description",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "26a36e0d65452619182a545883c81bd9158554c1cc2977dd5ebd57f427d76f00": {
+    "query": "\n        insert into series(slug, title, cr_id)\n        values($1, $2, $3)\n        returning id, slug, title, cr_id\n    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "2ff915ff35d68c8cad409f8bb024db29295ebb87d2fc1e3c84412e5fb48cdcfc": {
+    "query": "\n        select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from \"season\"\n        where LOWER(title_en) like '%' || $1 || '%'\n        or LOWER(title_romaji) like '%' || $1 || '%'\n        or LOWER(slug) like '%' || $1 || '%'\n        or LOWER(synonyms) like '%' || $1 || '%'\n    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "series_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "title_en",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "title_ja",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "title_romaji",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "keywords",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "anilist_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "synonyms",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 11,
+          "name": "episode_amt",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "episode_dur",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "341a5a5ee7954163d719ef30e4258452b6680e9e229b8a6207c0851c1a7c0b9e": {
+    "query": "\n        select id, episode_id, host, quality, sub_lang, sub_burned, sub_url, url, time from \"media\"\n        where episode_id = $1\n    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "episode_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "host",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "quality",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "sub_lang",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "sub_burned",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 6,
+          "name": "sub_url",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "url",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "time",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false
+      ]
+    }
+  },
+  "50242a93b40b4a45cd11f3cc0a441ae2d5753be4c14fe38b8a037932bce48a15": {
+    "query": "\n            select id, slug, title, cr_id from \"series\"\n            where slug = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "96aaa28525088783684259ec7fd448a642377a2035e492716730c2a3e5a7eb9e": {
+    "query": "\n        select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from \"season\"\n        where slug = $1\n    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "series_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "title_en",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "title_ja",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "title_romaji",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "keywords",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "anilist_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "synonyms",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 11,
+          "name": "episode_amt",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "episode_dur",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "c27386f6a5ef87805b9bd042df2c59e05c03a90abaedad0309a89b5497336b11": {
+    "query": "\n                insert into episode(season_id, number, title, cr_id, description)\n                values($1, $2, $3, $4, $5)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Float8",
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d0623757bc03bbeda09773ef699bffc2e4ec1e03e62d4796d377d0a355c753a1": {
+    "query": "\n    select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from \"season\"\n    where cr_id = $1\n",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "series_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "title_en",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "title_ja",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "title_romaji",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "keywords",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "anilist_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "synonyms",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 11,
+          "name": "episode_amt",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "episode_dur",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "d81e068d13ab79a38695df4a931996ccc14baaaa75230782387032dba3b901fb": {
+    "query": "\n            select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from \"season\"\n            where slug = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "series_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "slug",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "title_en",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "title_ja",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "title_romaji",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "keywords",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "anilist_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "synonyms",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 11,
+          "name": "episode_amt",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 12,
+          "name": "episode_dur",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "fd247ecfb79fcfcb4b722e10218a6e338ae4a618898365bdc2175de2143fada8": {
+    "query": "\n                    select id, season_id, number, title, cr_id, description from \"episode\"\n                    where season_id = $1\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 1,
+          "name": "season_id",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 2,
+          "name": "number",
+          "type_info": "Float8"
+        },
+        {
+          "ordinal": 3,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "cr_id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "description",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ]
+    }
+  }
+}

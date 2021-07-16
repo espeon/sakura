@@ -10,7 +10,7 @@ edition = "2018"
 dotenv = "0.15.0"
 anyhow = "1.0"
 reqwest = { version = "0.11.3", features = ["json"] }
-sqlx = { version = "^0.5", default-features = false, features = [ "runtime-tokio-native-tls", "macros", "postgres", "sqlite", "chrono", "json" ] }
+sqlx = { version = "^0.5", default-features = false, features = [ "runtime-tokio-native-tls", "macros", "postgres", "sqlite", "chrono", "json", "offline" ] }
 chrono = { version = "0.4.9", features = ["serde"]}
 serde = "1.0.125"
 serde_json = "1.0.64"
