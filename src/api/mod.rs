@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    api::models::{replies, Episode, Media, Season, Series},
+    api::models::{replies, Episode, Media, Season},
     cr::CrunchyrollClient,
 };
 
@@ -40,7 +40,7 @@ struct TestSeasons {
 pub async fn get_series<'r>(
     pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
     _cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
-    hashid: State<'_, Harsh>,
+    _hashid: State<'_, Harsh>,
     slug: String,
 ) -> Result<JsonValue, NoContent> {
     match query_as!(
@@ -100,7 +100,7 @@ pub async fn get_episodes<'r>(
 pub async fn search<'r>(
     pool: State<'_, sqlx::Pool<sqlx::Postgres>>,
     _cr_rw: State<'r, Arc<RwLock<CrunchyrollClient>>>,
-    hashid: State<'_, Harsh>,
+    _hashid: State<'_, Harsh>,
     q: String,
 ) -> Result<JsonValue, Forbidden<String>> {
     match query_as!(

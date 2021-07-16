@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use harsh::Harsh;
-use rocket::State;
+
 use super::{Episode, Season};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -18,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
     let req_client = ReqwestClient::new();
     let pool = db::get_pool().await?;
 
-    let mut client = CrunchyrollClient::new(pool.clone(), req_client).await?;
+    let client = CrunchyrollClient::new(pool.clone(), req_client).await?;
 
     let client_cover = Arc::new(tokio::sync::RwLock::new(client));
 
@@ -58,7 +58,8 @@ async fn go(
                 api::index,
                 api::get_series,
                 api::get_episodes,
-                api::show_experience
+                api::show_experience,
+                api::search
             ],
         )
         .mount(

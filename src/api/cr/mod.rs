@@ -194,7 +194,7 @@ pub async fn index_episodes<'r>(
         Err(_) => todo!(),
     };
 
-    let mut cr = cr_rw.write().await;
+    let cr = cr_rw.write().await;
     let episodes = match cr.to_owned().episodes(cr_id).await {
         Ok(r) => r,
         Err(e) => return Err(Forbidden(Some(e.to_string()))),
