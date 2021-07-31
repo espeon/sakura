@@ -140,7 +140,7 @@ pub async fn index_series<'r>(
             }}
         };
 
-            let episodes = match cr.to_owned().episodes(season.id.clone()).await {
+            let episodes = match cr.to_owned().episodes(season.id.clone(), 1).await {
                 Ok(r) => r,
                 Err(e) => return Err(Forbidden(Some(e.to_string()))),
             };
@@ -195,7 +195,7 @@ pub async fn index_episodes<'r>(
     };
 
     let cr = cr_rw.write().await;
-    let episodes = match cr.to_owned().episodes(cr_id).await {
+    let episodes = match cr.to_owned().episodes(cr_id, 1).await {
         Ok(r) => r,
         Err(e) => return Err(Forbidden(Some(e.to_string()))),
     };

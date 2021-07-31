@@ -6,8 +6,7 @@ use crate::cr::models::episodes::CrEpisodesResult;
 
 use self::models::{
     episodes::EpisodeItem, search::CrSearchResult, seasons::CrSeasonsResult,
-    series::CrSeriesResult, stream::CrStreamResult, 
-    Cms, CrApiAccessToken, CrApiCms,
+    series::CrSeriesResult, stream::CrStreamResult, Cms, CrApiAccessToken, CrApiCms,
 };
 
 pub mod models;
@@ -28,7 +27,9 @@ pub enum AccessLevel {
 #[derive(Clone, Debug)]
 pub struct CrunchyrollClient {
     pub token: CrAccessToken,
+    pub token2: Option<CrAccessToken>,
     pub cms: Option<Cms>,
+    pub cms2: Option<Cms>,
     db: sqlx::Pool<sqlx::Postgres>,
     pub req: Client,
 }
@@ -58,7 +59,9 @@ impl CrunchyrollClient {
                 expiry,
                 refresh_token: None,
             },
+            token2: None,
             cms: None,
+            cms2: None,
             db,
             req,
         };
@@ -98,11 +101,54 @@ impl CrunchyrollClient {
                 expiry,
                 refresh_token: res.refresh_token,
             },
+            token2: None,
             cms: None,
+            cms2: None,
             db,
             req,
         };
         Ok(client)
+    }
+    pub async fn add_credentials(
+        &mut self,
+        username: String,
+        password: String,
+    ) -> anyhow::Result<CrAccessToken, anyhow::Error> {
+        let res: CrApiAccessToken = self
+            .req
+            .post("https://beta-api.crunchyroll.com/auth/v1/token")
+            .header(
+                "authorization",
+                "Basic MWlhZ2ZsbjAycF9yY2R3amxzZ2E6MWl2dk85eVdubDUxTEd5N2VGTm5fdVdmMVluSUNGNEE=",
+            ) // used for Android client
+            .header("content-type", "application/x-www-form-urlencoded")
+            .form(&[
+                ("grant_type", "password"),
+                ("username", &username),
+                ("password", &password),
+                ("scope", "offline_access"),
+            ])
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        let token_length = Duration::minutes(res.expires_in);
+        let expiry = chrono::Utc::now().add(token_length);
+
+        if res.refresh_token == None {
+            return Err(anyhow::anyhow!("The second set of credentials *needs* to be premium"));
+        }
+        let token_object = CrAccessToken {
+            // insert token info ()
+            access_token: res.access_token,
+            expiry,
+            refresh_token: res.refresh_token,
+        };
+
+        self.token2 = Some(token_object.clone());
+
+        Ok(token_object)
     }
     pub async fn search(&self, to_search: String) -> anyhow::Result<CrSearchResult, anyhow::Error> {
         let res: CrSearchResult = self
@@ -123,7 +169,7 @@ impl CrunchyrollClient {
     ) -> anyhow::Result<CrSeriesResult, anyhow::Error> {
         println!("series");
         let info = self.clone();
-        let cms = self.check_cms().await?;
+        let cms = self.check_cms(1).await?;
         let res: CrSeriesResult = info
             .req
             .get(format!(
@@ -150,7 +196,7 @@ impl CrunchyrollClient {
     ) -> anyhow::Result<CrSeasonsResult, anyhow::Error> {
         println!("season");
         let info = self.clone();
-        let cms = self.check_cms().await?;
+        let cms = self.check_cms(1).await?;
         let res: CrSeasonsResult = info
             .req
             .get(format!(
@@ -175,10 +221,11 @@ impl CrunchyrollClient {
     pub async fn episodes(
         &mut self,
         season_id: String,
+        which_cms: i8,
     ) -> anyhow::Result<CrEpisodesResult, anyhow::Error> {
         println!("episode");
         let info = self.clone();
-        let cms = self.check_cms().await?;
+        let cms = self.check_cms(which_cms).await?;
         let res: CrEpisodesResult = info
             .req
             .get(format!(
@@ -205,7 +252,9 @@ impl CrunchyrollClient {
     ) -> anyhow::Result<CrStreamResult, anyhow::Error> {
         let info = self.clone();
         if episode.is_premium_only && self.access_level().await != AccessLevel::Premium {
-            return Err(anyhow::anyhow!("Premium only"));
+            if self.token2.is_none() {
+                return Err(anyhow::anyhow!("Premium only"));
+            }
         }
         let res: CrStreamResult = info
             .req
@@ -217,8 +266,12 @@ impl CrunchyrollClient {
 
         Ok(res)
     }
-    pub async fn check_cms(&mut self) -> anyhow::Result<Cms, anyhow::Error> {
-        let cms_info = match &self.cms {
+    pub async fn check_cms(&mut self, which: i8) -> anyhow::Result<Cms, anyhow::Error> {
+        let which_cms = match which {
+            2 => &self.cms2,
+            _ => &self.cms
+        };
+        let cms_info = match which_cms {
             Some(cms) => {
                 println!("Cms info found");
 
@@ -233,24 +286,35 @@ impl CrunchyrollClient {
                         "it is currently {} and token expires at {}",
                         now, cms.expires
                     );
-                    let cms_info = self.get_cms().await?;
+                    let cms_info = self.get_cms(which).await?;
                     cms_info
                 }
             }
             None => {
-                let cms_info = self.get_cms().await?;
+                let cms_info = self.get_cms(which).await?;
                 cms_info
             }
         };
-        self.cms = Some(cms_info.clone());
+        match which {
+            2 => self.cms2 = Some(cms_info.clone()),
+            _ => self.cms = Some(cms_info.clone())
+        };
+        //self.cms = Some(cms_info.clone());
         Ok(cms_info)
     }
-    async fn get_cms(&self) -> anyhow::Result<Cms, anyhow::Error> {
+    async fn get_cms(&self, which:i8) -> anyhow::Result<Cms, anyhow::Error> {
+        let which_token = match which {
+            2 => match &self.token2 {
+                Some(e) => e,
+                None => todo!(),
+            },
+            _ => &self.token
+        };
         println!("Getting CMS Info");
         let res: CrApiCms = self
             .req
             .get("https://beta-api.crunchyroll.com/index/v2")
-            .bearer_auth(&self.token.access_token)
+            .bearer_auth(which_token.access_token.clone())
             .send()
             .await?
             .json()

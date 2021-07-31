@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use cr::CrunchyrollClient;
 use harsh::Harsh;
@@ -18,7 +18,16 @@ async fn main() -> anyhow::Result<()> {
     let req_client = ReqwestClient::new();
     let pool = db::get_pool().await?;
 
-    let client = CrunchyrollClient::new(pool.clone(), req_client).await?;
+    let mut client = CrunchyrollClient::new(pool.clone(), req_client).await?;
+    match env::var("CR_USERNAME") {
+        Ok(_) => {
+            client
+                .add_credentials(env::var("CR_USERNAME")?, env::var("CR_PASSWORD")?)
+                .await?;
+            println!("Credentials detected.")
+        }
+        Err(_) => println!("Credentials not detected."),
+    };
 
     let client_cover = Arc::new(tokio::sync::RwLock::new(client));
 
@@ -62,12 +71,7 @@ async fn go(
                 api::search
             ],
         )
-        .mount(
-            "/api/cr",
-            rocket::routes![
-                api::cr::index_series
-            ],
-        )
+        .mount("/api/cr", rocket::routes![api::cr::index_series])
         .launch()
         .await?;
     Ok(())

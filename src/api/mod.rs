@@ -78,6 +78,7 @@ pub async fn get_episodes<'r>(
         r#"
         select id, season_id, number, title, cr_id, description from "episode"
         where season_id = $1
+        order by number asc;
     "#,
         id[0] as i32,
     )
@@ -199,7 +200,8 @@ pub async fn show_experience<'r>(
                     Ok(r) => r,
                     Err(e) => return Err(Forbidden(Some(e.to_string()))),
                 };
-                let all_episodes = match cr.episodes(season.cr_id.unwrap()).await {
+                let season_cr_id = season.cr_id.unwrap();
+                let mut all_episodes = match cr.episodes(season_cr_id.clone(), 1).await {
                     Ok(i) => i,
                     Err(_) => {
                         return Err(Forbidden(Some(
@@ -207,6 +209,17 @@ pub async fn show_experience<'r>(
                         )))
                     }
                 };
+                if all_episodes.items.iter().any(|epi| epi.is_premium_only == true) {
+                    println!("Premium detected, using premium account");
+                    all_episodes = match cr.episodes(season_cr_id, 2).await {
+                        Ok(i) => i,
+                        Err(_) => {
+                            return Err(Forbidden(Some(
+                                "Episode list could not be fetched from the external source.".to_string(),
+                            )))
+                        }
+                    };
+                }
                 let mut media_list: Vec<Media> = vec![];
                 if all_episodes.items.len() > ep_list.len() {
                     // reindex all episodes that were fetched
