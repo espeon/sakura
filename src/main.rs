@@ -47,7 +47,6 @@ async fn main() -> anyhow::Result<()> {
 
     // start up our web server
     // dunno if i want this in a separate thread or not
-    dbg!("help");
     go(pool, client_cover, hashid).await?;
     Ok(())
 }
@@ -72,6 +71,7 @@ async fn go(
             ],
         )
         .mount("/api/cr", rocket::routes![api::cr::index_series])
+        .mount("/api/anilist", rocket::routes![api::anilist::get_metadata])
         .launch()
         .await?;
     Ok(())

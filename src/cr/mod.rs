@@ -42,9 +42,9 @@ impl CrunchyrollClient {
     ) -> anyhow::Result<Self, anyhow::Error> {
         let res: CrApiAccessToken = req
             .post("https://beta-api.crunchyroll.com/auth/v1/token")
-            .header("authorization", "Basic Y3Jfd2ViOg==")
+            .header("authorization", "Basic Y3Jfd2ViOg==") // used for webapp
             .header("content-type", "application/x-www-form-urlencoded")
-            .form(&[("grant_type", "client_id")])
+            .form(&[("grant_type", "client_id")]) //cr uses both a form and basic auth
             .send()
             .await?
             .json()
@@ -56,8 +56,8 @@ impl CrunchyrollClient {
         let client = CrunchyrollClient {
             token: CrAccessToken {
                 access_token: res.access_token, //fetched token
-                expiry,
-                refresh_token: None,
+                expiry, // usually three hours but we use returned value anyways
+                refresh_token: None, // non logged-in user does not include a refresh token
             },
             token2: None,
             cms: None,
