@@ -3,6 +3,11 @@ use reqwest::Client;
 use std::ops::Add;
 
 use crate::cr::models::episodes::CrEpisodesResult;
+use base64::encode;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use ring::hmac;
+use urlencoding::encode as url_encode;
 
 use self::models::{
     episodes::EpisodeItem, search::CrSearchResult, seasons::CrSeasonsResult,
@@ -26,6 +31,7 @@ pub enum AccessLevel {
 
 #[derive(Clone, Debug)]
 pub struct CrunchyrollClient {
+    pub domain: String,
     pub token: CrAccessToken,
     pub token2: Option<CrAccessToken>,
     pub cms: Option<Cms>,
@@ -54,9 +60,10 @@ impl CrunchyrollClient {
         let expiry = chrono::Utc::now().add(token_length);
 
         let client = CrunchyrollClient {
+            domain: "https://beta-api.crunchyroll.com/".to_string(),
             token: CrAccessToken {
                 access_token: res.access_token, //fetched token
-                expiry, // usually three hours but we use returned value anyways
+                expiry,              // usually three hours but we use returned value anyways
                 refresh_token: None, // non logged-in user does not include a refresh token
             },
             token2: None,
@@ -95,6 +102,7 @@ impl CrunchyrollClient {
         let expiry = chrono::Utc::now().add(token_length);
 
         let client = CrunchyrollClient {
+            domain: "https://beta-api.crunchyroll.com/".to_string(),
             token: CrAccessToken {
                 // insert token info (refresh token included if premium)
                 access_token: res.access_token,
@@ -133,11 +141,56 @@ impl CrunchyrollClient {
             .json()
             .await?;
 
+        dbg!(&res);
+
         let token_length = Duration::minutes(res.expires_in);
         let expiry = chrono::Utc::now().add(token_length);
 
         if res.refresh_token == None {
-            return Err(anyhow::anyhow!("The second set of credentials *needs* to be premium"));
+            return Err(anyhow::anyhow!(
+                "The second set of credentials *needs* to be premium"
+            ));
+        }
+        let token_object = CrAccessToken {
+            // insert token info ()
+            access_token: res.access_token,
+            expiry,
+            refresh_token: res.refresh_token,
+        };
+
+        self.token2 = Some(token_object.clone());
+
+        Ok(token_object)
+    }
+    pub async fn add_etp(
+        &mut self,
+        req: Client,
+        etp: String,
+    ) -> anyhow::Result<CrAccessToken, anyhow::Error> {
+        let res: CrApiAccessToken = self
+            .req
+            .post("https://beta-api.crunchyroll.com/auth/v1/token")
+            .header(
+                "authorization",
+                "Basic MWlhZ2ZsbjAycF9yY2R3amxzZ2E6MWl2dk85eVdubDUxTEd5N2VGTm5fdVdmMVluSUNGNEE=",
+            ) // used for Android client
+            .header("content-type", "application/x-www-form-urlencoded")
+            .header("Cookie", format!("etp_rt={};", "c89c7320-53b2-44e2-82c1-df1421cb770d"))
+            .form(&[("grant_type", "etp_rt_cookie")])
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        dbg!(&res);
+
+        let token_length = Duration::minutes(res.expires_in);
+        let expiry = chrono::Utc::now().add(token_length);
+
+        if res.refresh_token == None {
+            return Err(anyhow::anyhow!(
+                "The second set of credentials *needs* to be premium"
+            ));
         }
         let token_object = CrAccessToken {
             // insert token info ()
@@ -226,7 +279,7 @@ impl CrunchyrollClient {
         println!("episode");
         let info = self.clone();
         let cms = self.check_cms(which_cms).await?;
-        let res: CrEpisodesResult = info
+        let res = info
             .req
             .get(format!(
                 "https://beta-api.crunchyroll.com/cms/v2{}/episodes",
@@ -240,11 +293,12 @@ impl CrunchyrollClient {
             ])
             .bearer_auth(info.token.access_token)
             .send()
-            .await?
-            .json()
+            .await?;
+        dbg!(res.url());
+        let send: CrEpisodesResult = res.json()
             .await?;
 
-        Ok(res)
+        Ok(send)
     }
     pub async fn stream(
         &mut self,
@@ -255,6 +309,9 @@ impl CrunchyrollClient {
             if self.token2.is_none() {
                 return Err(anyhow::anyhow!("Premium only"));
             }
+        }
+        if episode.mature_blocked {
+            return Err(anyhow::anyhow!("Mature content is blocked"))
         }
         let res: CrStreamResult = info
             .req
@@ -269,7 +326,7 @@ impl CrunchyrollClient {
     pub async fn check_cms(&mut self, which: i8) -> anyhow::Result<Cms, anyhow::Error> {
         let which_cms = match which {
             2 => &self.cms2,
-            _ => &self.cms
+            _ => &self.cms,
         };
         let cms_info = match which_cms {
             Some(cms) => {
@@ -277,7 +334,7 @@ impl CrunchyrollClient {
 
                 let now = chrono::Utc::now();
                 if now < cms.expires.parse::<DateTime<Utc>>()? {
-                    println!("{:?}", &cms);
+                    println!("{}{:?}", which, &cms);
                     println!("not expired");
                     cms.to_owned()
                 } else {
@@ -297,20 +354,22 @@ impl CrunchyrollClient {
         };
         match which {
             2 => self.cms2 = Some(cms_info.clone()),
-            _ => self.cms = Some(cms_info.clone())
+            _ => self.cms = Some(cms_info.clone()),
         };
+        dbg!(which);
         //self.cms = Some(cms_info.clone());
         Ok(cms_info)
     }
-    async fn get_cms(&self, which:i8) -> anyhow::Result<Cms, anyhow::Error> {
+    async fn get_cms(&self, which: i8) -> anyhow::Result<Cms, anyhow::Error> {
         let which_token = match which {
             2 => match &self.token2 {
                 Some(e) => e,
                 None => todo!(),
             },
-            _ => &self.token
+            _ => &self.token,
         };
         println!("Getting CMS Info");
+
         let res: CrApiCms = self
             .req
             .get("https://beta-api.crunchyroll.com/index/v2")

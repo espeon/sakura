@@ -31,7 +31,7 @@ pub struct AnilistSeasonResult {
     pub cover_image: CoverImage,
     #[serde(rename = "type")]
     pub result_type: String,
-    pub format: String,
+    pub format: Option<String>,
     pub description: Option<String>,
     #[serde(rename = "bannerImage")]
     pub banner_image: Option<String>,
@@ -55,7 +55,7 @@ pub struct CoverImage {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StartDate {
-    pub year: i64,
+    pub year: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

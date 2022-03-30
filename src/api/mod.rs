@@ -119,6 +119,7 @@ pub async fn search<'r>(
     .await
     {
         Ok(season) => {
+            dbg!(season.clone());
             let mut return_seasons:Vec<replies::ReturnSeason> = vec![];
             for r in season {
                 let cvt: replies::ReturnSeason = r.into();
@@ -209,13 +210,13 @@ pub async fn show_experience<'r>(
                         )))
                     }
                 };
-                if all_episodes.items.iter().any(|epi| epi.is_premium_only == true) {
-                    println!("Premium detected, using premium account");
+                if all_episodes.items.iter().any(|epi| epi.is_premium_only == true || epi.mature_blocked == true) {
+                    println!("Premium or mature content detected, using account 2");
                     all_episodes = match cr.episodes(season_cr_id, 2).await {
                         Ok(i) => i,
-                        Err(_) => {
+                        Err(e) => {
                             return Err(Forbidden(Some(
-                                "Episode list could not be fetched from the external source.".to_string(),
+                                "Episode list could not be fetched from the external source.".to_string() + &e.to_string(),
                             )))
                         }
                     };

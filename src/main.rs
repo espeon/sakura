@@ -14,21 +14,29 @@ mod api;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //let mut client = CrunchyrollClient::new_with_vrv_credentials(
+    //    ReqwestClient::new(),
+    //    "tranlybrandon@yahoo.com".to_string(),
+    //    "Demolationer7".to_string(),
+    //).await?;
+
     dotenv::dotenv()?;
     let req_client = ReqwestClient::new();
     let pool = db::get_pool().await?;
-
+    
     let mut client = CrunchyrollClient::new(pool.clone(), req_client).await?;
     match env::var("CR_USERNAME") {
-        Ok(_) => {
+        Ok(_) => {println!("Credentials detected.");
             client
                 .add_credentials(env::var("CR_USERNAME")?, env::var("CR_PASSWORD")?)
                 .await?;
-            println!("Credentials detected.")
+            
         }
         Err(_) => println!("Credentials not detected."),
     };
 
+    dbg!(&client.token);
+    
     let client_cover = Arc::new(tokio::sync::RwLock::new(client));
 
     //let search_result = &client.search("higehiro".to_string()).await?;
@@ -44,9 +52,9 @@ async fn main() -> anyhow::Result<()> {
         .salt("sakura-app!")
         .build()
         .unwrap(); // pad to length 10
-
-    // start up our web server
-    // dunno if i want this in a separate thread or not
+//
+    //// start up our web server
+    //// dunno if i want this in a separate thread or not
     go(pool, client_cover, hashid).await?;
     Ok(())
 }
@@ -70,7 +78,7 @@ async fn go(
                 api::search
             ],
         )
-        .mount("/api/cr", rocket::routes![api::cr::index_series])
+        .mount("/api/cr", rocket::routes![api::cr::index_series, api::cr::index_episodes])
         .mount("/api/anilist", rocket::routes![api::anilist::get_metadata])
         .launch()
         .await?;
