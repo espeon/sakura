@@ -39,20 +39,23 @@ pub async fn index_series<'r>(
     //    Err(_) => 0 as i32,
     //}));
     //
-    let series = match cr.series(cr_id).await {
+    let crseries = match cr.series(cr_id).await {
         Ok(r) => r,
         Err(e) => return Err(Forbidden(Some(e.to_string()))),
     };
 
     let mut r = TestReturn {
-        series: series.title,
+        series: crseries.title.clone(),
         seasons: vec![],
     };
 
-    let seasons = match cr.seasons(series.id.to_owned()).await {
+    let seasons = match cr.seasons(crseries.id.to_owned()).await {
         Ok(r) => r,
         Err(e) => return Err(Forbidden(Some(e.to_string()))),
     };
+
+    dbg!(&seasons);
+    dbg!("Series OK");
 
     let series = match query_as!(
         Series,
@@ -70,6 +73,7 @@ pub async fn index_series<'r>(
     {
         Ok(r) => r,
         Err(_) => {
+            println!("help");
             match query_as!(
                 Series,
                 r#"
@@ -91,7 +95,11 @@ pub async fn index_series<'r>(
         if season.title.clone().contains("Dub") {
             println!("dub detected!!!!")
         } else {
-            let anilist_season = match anilist::search_season(season.title.clone()).await {
+            let title = match season.title == "".to_string() {
+                true  => crseries.title.clone(),
+                false => season.title.clone()
+            };
+            let anilist_season = match anilist::search_season(title).await {
                 Ok(e) => e,
                 Err(e) => return Err(Forbidden(Some(e.to_string()))),
             };
@@ -130,7 +138,7 @@ pub async fn index_series<'r>(
             select id, series_id, slug, title_en, title_ja, title_romaji, cr_id, keywords, anilist_id, description, synonyms, episode_amt, episode_dur from "season"
             where slug = $1
         "#,
-        slug::slugify(season.title.to_owned()),
+        slug::slugify(anilist_season[0].title.romaji.clone()),
             )
             .fetch_one(&mut pool.acquire().await.unwrap())
             .await
