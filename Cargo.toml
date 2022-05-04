@@ -18,6 +18,12 @@ slug = "0.1.4"
 regex = "1.5.4"
 harsh = "0.2.1"
 url = "2.2.2"
+rand = "0.8.4"
+ring = "0.16.20"
+convert-base = "1.1.2"
+base64 = "0.13.0"
+urlencoding = "2.1.0"
+oauth = { version = "0.5", package = "oauth1-request" }
 
 [dependencies.tokio]
 version = "^1"

@@ -23,7 +23,7 @@ mod queries;
 pub async fn search_season(
     query: String,
 ) -> anyhow::Result<Vec<AnilistSeasonResult>, anyhow::Error> {
-    println!("anilist-season");
+    
     let json = json!(
             {
             "query": SEARCH_SEASON,
@@ -34,17 +34,19 @@ pub async fn search_season(
             }
         }
     );
-    let season: AnilistSeason = Client::new()
+
+    dbg!(&json);
+    let seasona = Client::new()
         .post("https://graphql.anilist.co")
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
         .body(json.to_string())
         .send()
-        .await?
-        .json()
         .await?;
+    let season: AnilistSeason = seasona.json().await?;
     dbg!(season.clone());
     let results = season.data.anime.results;
+    println!("anilist-season");
     Ok(results)
 }
 

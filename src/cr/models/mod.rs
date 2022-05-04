@@ -27,3 +27,17 @@ pub struct CrApiAccessToken {
     pub country: String,
     pub refresh_token: Option<String>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct VrvAccessToken {
+    signing_policies: Vec<SigningPolicy>,
+    service_available: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SigningPolicy {
+    name: String,
+    path: String,
+    value: String,
+    expires: String,
+}
